@@ -1,0 +1,94 @@
+import React, { useMemo, useState } from 'react';
+import { Search, ShoppingBag, Menu, X, ArrowUpRight, Star, Heart, MessageCircle, SlidersHorizontal, Plus, Minus, Trash2, Sparkles, Instagram } from 'lucide-react';
+import { WHATSAPP_NUMBER } from './config';
+import logo from './assets/bruwel-logo.png';
+
+const products = [
+  { id: 1, name: 'Cuadro en aluminio', category: 'Cuadros', price: 59900, tag: 'Más elegido', color: 'pink', description: 'Tus recuerdos favoritos convertidos en una pieza decorativa con acabado brillante.', image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&auto=format&fit=crop&q=85' },
+  { id: 2, name: 'Pad mouse personalizado', category: 'Pad mouse', price: 29900, tag: 'Personalizable', color: 'mint', description: 'Dale personalidad a tu escritorio con un diseño que hable de ti.', image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=900&auto=format&fit=crop&q=85' },
+  { id: 3, name: 'Camiseta sublimada', category: 'Camisetas', price: 39900, tag: 'Tu estilo', color: 'yellow', description: 'Lleva tus ideas, personajes y diseños favoritos a donde vayas.', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=900&auto=format&fit=crop&q=85' },
+  { id: 4, name: 'Mug personalizado', category: 'Mugs', price: 24900, oldPrice: 29900, tag: 'Favorito', color: 'lavender', description: 'Un detalle especial para acompañar tus momentos de todos los días.', image: 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=900&auto=format&fit=crop&q=85' },
+  { id: 5, name: 'Cuadro fotográfico', category: 'Cuadros', price: 69900, tag: 'Hecho para ti', color: 'mint', description: 'Una imagen importante merece un lugar especial en tus espacios.', image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=900&auto=format&fit=crop&q=85' },
+  { id: 6, name: 'Camiseta con diseño', category: 'Camisetas', price: 44900, tag: 'Nuevo', color: 'pink', description: 'Escoge una idea o cuéntanos qué diseño tienes en mente.', image: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=900&auto=format&fit=crop&q=85' },
+];
+const categories = ['Todos', 'Cuadros', 'Pad mouse', 'Camisetas', 'Mugs'];
+const money = n => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+
+function App() {
+  const [category, setCategory] = useState('Todos');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('featured');
+  const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [toast, setToast] = useState('');
+  const [newsletter, setNewsletter] = useState(false);
+  const filtered = useMemo(() => {
+    let list = products.filter(p => (category === 'Todos' || p.category === category) && p.name.toLowerCase().includes(search.toLowerCase()));
+    if (sort === 'low') list = [...list].sort((a,b) => a.price-b.price);
+    if (sort === 'high') list = [...list].sort((a,b) => b.price-a.price);
+    return list;
+  }, [category, search, sort]);
+  const count = cart.reduce((n, item) => n + item.qty, 0);
+  const total = cart.reduce((n, item) => n + item.price * item.qty, 0);
+  const notify = text => { setToast(text); window.setTimeout(() => setToast(''), 2400); };
+  const add = product => { setCart(old => { const found = old.find(i => i.id === product.id); return found ? old.map(i => i.id === product.id ? {...i, qty:i.qty+1} : i) : [...old, {...product, qty:1}]; }); notify('¡Agregado a tu carrito!'); };
+  const changeQty = (id, delta) => setCart(old => old.map(i => i.id === id ? {...i, qty:i.qty+delta} : i).filter(i => i.qty > 0));
+  const checkout = () => {
+    if (!cart.length) return;
+    if (!WHATSAPP_NUMBER) { notify('Falta configurar el WhatsApp en src/config.js'); return; }
+    const lines = cart.map(i => `• ${i.name} x${i.qty}: ${money(i.price*i.qty)}`).join('%0A');
+    const message = `¡Hola BRUWEL! Quiero hacer este pedido:%0A${lines}%0A%0ATotal: ${money(total)}%0A¿Me ayudan a confirmar disponibilidad y personalización?`;
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank', 'noopener,noreferrer');
+  };
+  const scrollTo = id => { document.getElementById(id)?.scrollIntoView({behavior:'smooth'}); setMobileMenu(false); };
+
+  return <div className="site-shell">
+    <div className="announcement"><Sparkles size={14}/> Diseños únicos, detalles que cuentan historias <span>·</span> Hecho especialmente para ti</div>
+    <header className="header">
+      <a className="brand" href="#inicio" aria-label="BRUWEL inicio"><img src={logo} alt="Isotipo BRUWEL"/><span><b>BRUWEL</b><small>IDEAS QUE TOMAN FORMA</small></span></a>
+      <nav className={mobileMenu ? 'nav nav-open' : 'nav'}><button onClick={()=>scrollTo('inicio')}>Inicio</button><button onClick={()=>scrollTo('tienda')}>Tienda</button><button onClick={()=>scrollTo('galeria')}>Inspiración</button><button onClick={()=>scrollTo('opiniones')}>Opiniones</button><button onClick={()=>scrollTo('contacto')}>Contacto</button></nav>
+      <div className="header-actions"><label className="searchbox"><Search size={17}/><input value={search} onChange={e=>{setSearch(e.target.value);scrollTo('tienda')}} placeholder="Buscar productos..."/></label><button className="icon-btn cart-trigger" onClick={()=>setCartOpen(true)} aria-label="Abrir carrito"><ShoppingBag size={20}/><i>{count}</i></button><button className="menu-trigger icon-btn" onClick={()=>setMobileMenu(!mobileMenu)} aria-label="Menú">{mobileMenu?<X/>:<Menu/>}</button></div>
+    </header>
+
+    <main>
+      <section className="hero" id="inicio"><div className="hero-copy"><span className="eyebrow"><span className="eyebrow-dot"/> CREATIVIDAD EN CADA DETALLE</span><h1>Hazlo <em>único.</em><br/><span>Hazlo tuyo.</span></h1><p>Cuadros, camisetas, mugs y accesorios personalizados para regalar, decorar y expresar todo lo que eres.</p><button className="primary-btn" onClick={()=>scrollTo('tienda')}>Explorar la tienda <ArrowUpRight size={18}/></button><div className="hero-note"><span className="avatar-stack"><i>✦</i><i>♡</i><i>☺</i></span><span>Pequeñas ideas, grandes sonrisas.</span></div></div>
+        <div className="hero-art"><div className="blob blob-one"/><div className="blob blob-two"/><div className="art-label label-top">TU IDEA, TU ESTILO ✳</div><div className="art-card art-frame"><img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&auto=format&fit=crop&q=85" alt="Ejemplo de cuadro decorativo"/><span>Momentos para recordar</span></div><div className="art-card art-shirt"><img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700&auto=format&fit=crop&q=85" alt="Camiseta personalizada"/></div><div className="art-card art-mug"><img src="https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=500&auto=format&fit=crop&q=85" alt="Mug personalizado"/></div><div className="art-sticker">HECHO<br/>CON<br/><b>AMOR</b> ♥</div><div className="art-label label-bottom">CREA · PERSONALIZA · SORPRENDE</div></div>
+      </section>
+
+      <section className="category-section"><div className="section-kicker">UN UNIVERSO DE POSIBILIDADES</div><div className="section-heading"><h2>¿Qué quieres <span>crear?</span></h2><p>Encuentra ese detalle que estabas imaginando.</p></div><div className="category-grid">{[{name:'Cuadros',sub:'Tus recuerdos en grande',emoji:'▧',c:'pink'},{name:'Pad mouse',sub:'Dale vida a tu escritorio',emoji:'⌁',c:'lavender'},{name:'Camisetas',sub:'Viste tus ideas',emoji:'✳',c:'yellow'},{name:'Mugs',sub:'Momentos con tu sello',emoji:'☕',c:'mint'}].map(c=><button className={`category-tile ${c.c}`} key={c.name} onClick={()=>{setCategory(c.name);scrollTo('tienda')}}><span className="category-emoji">{c.emoji}</span><span><b>{c.name}</b><small>{c.sub}</small></span><ArrowUpRight className="category-arrow" size={19}/></button>)}</div></section>
+
+      <section className="shop-section" id="tienda"><div className="shop-top"><div><div className="section-kicker">HECHOS PARA TI</div><h2>Encuentra tu <span>favorito.</span></h2><p>Diseños que conectan contigo y detalles que sorprenden.</p></div><div className="shop-tools"><label className="select-wrap"><SlidersHorizontal size={16}/><select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Ordenar productos"><option value="featured">Destacados</option><option value="low">Menor precio</option><option value="high">Mayor precio</option></select></label></div></div>
+        <div className="filter-row">{categories.map(c=><button key={c} className={category===c?'filter-chip active':'filter-chip'} onClick={()=>setCategory(c)}>{c}</button>)}<span className="result-count">{filtered.length} productos</span></div>
+        <div className="product-grid">{filtered.map(p=><article className="product-card" key={p.id}><div className="product-image"><img src={p.image} alt={p.name} loading="lazy"/><span className={`product-tag ${p.color}`}>{p.tag}</span><button className="favorite-btn" aria-label="Añadir a favoritos" onClick={()=>notify('Los favoritos estarán disponibles próximamente')}><Heart size={17}/></button><button className="quick-add" onClick={()=>add(p)}><Plus size={17}/> Agregar</button></div><div className="product-info"><div className="product-category">{p.category}</div><h3>{p.name}</h3><p>{p.description}</p><div className="product-bottom"><strong>{money(p.price)}</strong><button className="add-circle" onClick={()=>add(p)} aria-label={`Agregar ${p.name}`}><Plus size={19}/></button></div></div></article>)}</div>
+        {filtered.length===0&&<div className="empty-state">No encontramos productos con esa búsqueda. Prueba con otra palabra.</div>}
+        <div className="custom-banner"><div className="banner-spark">✳</div><div><span>¿TIENES UNA IDEA EN MENTE?</span><h3>¡La hacemos realidad!</h3><p>Cuéntanos qué imaginas y creemos algo único para ti.</p></div><button className="dark-btn" onClick={()=>scrollTo('contacto')}>Quiero personalizar <ArrowUpRight size={17}/></button></div>
+      </section>
+
+      <section className="gallery-section" id="galeria"><div className="gallery-copy"><div className="section-kicker">UN POCO DE INSPIRACIÓN</div><h2>Cada creación<br/>tiene <span>su historia.</span></h2><p>Nos encanta transformar ideas en objetos que acompañan tus días, celebran momentos y hacen sonreír.</p><button className="text-link" onClick={()=>scrollTo('contacto')}>Hablemos de tu idea <ArrowUpRight size={17}/></button></div><div className="gallery-mosaic"><div className="mosaic-one"><img src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&auto=format&fit=crop&q=85" alt="Inspiración de arte y decoración"/></div><div className="mosaic-two"><img src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=700&auto=format&fit=crop&q=85" alt="Inspiración de camisetas"/></div><div className="mosaic-three"><img src="https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=600&auto=format&fit=crop&q=85" alt="Inspiración de mugs"/></div><span className="mosaic-note">UN DETALLE<br/>MUY TUYO ♥</span></div></section>
+
+      <section className="reviews-section" id="opiniones"><div className="reviews-title"><div className="section-kicker">PALABRAS QUE NOS INSPIRAN</div><h2>Lo bonito es que<br/><span>te encante.</span></h2><p>Queremos que cada pedido se convierta en una experiencia para recordar.</p></div><div className="review-placeholder"><div className="review-stars">★★★★★</div><blockquote>“Aquí pronto podrás leer las experiencias de quienes ya eligieron BRUWEL.”</blockquote><span>— Tu opinión también tendrá un lugar aquí</span><div className="review-disclaimer">Las reseñas reales se habilitarán cuando comencemos a recibir y verificar pedidos.</div></div></section>
+
+      <section className="benefits"><div><span>✦</span><b>Hecho con dedicación</b><small>Cada detalle importa</small></div><div><span>♡</span><b>Personaliza a tu manera</b><small>Ideas que se hacen realidad</small></div><div><span>⌁</span><b>Atención cercana</b><small>Te acompañamos en tu pedido</small></div><div><span>✳</span><b>Regalos con significado</b><small>Para momentos especiales</small></div></section>
+
+      <section className="contact-section" id="contacto"><div><div className="section-kicker">¿LO IMAGINAMOS JUNTOS?</div><h2>Tu próxima idea<br/>empieza <span>aquí.</span></h2><p>Escríbenos, cuéntanos qué tienes en mente y encontremos la mejor forma de hacerlo realidad.</p></div><div className="contact-card"><div className="contact-icon"><MessageCircle size={26}/></div><h3>Hablemos por WhatsApp</h3><p>Estamos listos para ayudarte con tu próximo producto personalizado.</p><button className="primary-btn" onClick={()=>{if(WHATSAPP_NUMBER)window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('¡Hola BRUWEL! Quiero información sobre sus productos.')}`,'_blank','noopener,noreferrer');else notify('Configura tu WhatsApp en src/config.js')}}>Escribir a BRUWEL <ArrowUpRight size={18}/></button></div></section>
+    </main>
+    <footer className="footer"><div className="footer-brand"><div className="brand footer-logo"><img src={logo} alt="Isotipo BRUWEL"/><span><b>BRUWEL</b><small>IDEAS QUE TOMAN FORMA</small></span></div><p>Pequeñas ideas, grandes sonrisas.<br/>Productos personalizados hechos para ti.</p></div><div className="footer-links"><b>Explora</b><button onClick={()=>scrollTo('inicio')}>Inicio</button><button onClick={()=>scrollTo('tienda')}>Tienda</button><button onClick={()=>scrollTo('galeria')}>Inspiración</button></div><div className="footer-links"><b>Estamos cerca</b><button onClick={()=>scrollTo('opiniones')}>Opiniones</button><button onClick={()=>scrollTo('contacto')}>Contacto</button><span><Instagram size={16}/> @bruwel</span></div><div className="footer-bottom"><span>© {new Date().getFullYear()} BRUWEL. Todos los derechos reservados.</span><span>Hecho con creatividad ♥</span></div></footer>
+
+    {cartOpen&&<div className="drawer-backdrop" onClick={()=>setCartOpen(false)}><aside className="cart-drawer" onClick={e=>e.stopPropagation()}><div className="drawer-head"><div><span className="section-kicker">TU SELECCIÓN</span><h2>Mi carrito <span>({count})</span></h2></div><button className="icon-btn" onClick={()=>setCartOpen(false)} aria-label="Cerrar carrito"><X/></button></div>{cart.length===0?<div className="cart-empty"><ShoppingBag size={38}/><h3>Tu carrito está esperando</h3><p>Agrega tus productos favoritos y aquí aparecerán.</p><button className="primary-btn" onClick={()=>{setCartOpen(false);scrollTo('tienda')}}>Ver productos</button></div>:<><div className="cart-items">{cart.map(i=><div className="cart-item" key={i.id}><img src={i.image} alt=""/><div className="cart-item-info"><b>{i.name}</b><strong>{money(i.price)}</strong><div className="qty-control"><button onClick={()=>changeQty(i.id,-1)}><Minus size={13}/></button><span>{i.qty}</span><button onClick={()=>changeQty(i.id,1)}><Plus size={13}/></button></div></div><button className="remove-btn" onClick={()=>changeQty(i.id,-i.qty)} aria-label="Eliminar"><Trash2 size={16}/></button></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><b>{money(total)}</b></div><small>El envío y los detalles de personalización se confirman por WhatsApp.</small><button className="primary-btn checkout-btn" onClick={checkout}>Continuar por WhatsApp <ArrowUpRight size={18}/></button></div></>}</aside></div>}
+    {toast&&<div className="toast">{toast}</div>}
+  </div>;
+}
+
+export default App;
+
+// Cambia este valor por tu número de WhatsApp con indicativo, solo números.
+// Ejemplo Colombia: 573001234567
+export const WHATSAPP_NUMBER = "";
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+import './styles.css';
+
+createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
